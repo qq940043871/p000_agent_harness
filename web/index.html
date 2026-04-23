@@ -1,0 +1,1724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Harness - 智能助手</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-hover: rgba(255, 255, 255, 0.06);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-muted: rgba(255, 255, 255, 0.4);
+            --accent-blue: #60a5fa;
+            --accent-purple: #a78bfa;
+            --accent-cyan: #22d3ee;
+            --accent-green: #4ade80;
+            --accent-red: #f87171;
+            --accent-orange: #fb923c;
+        }
+
+        html, body, #app {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* Main Layout */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 999;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 4px 15px rgba(96, 165, 250, 0.3);
+        }
+
+        .status-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-badge.idle {
+            background: rgba(74, 222, 128, 0.1);
+            color: var(--accent-green);
+        }
+
+        .status-badge.idle::before {
+            background: var(--accent-green);
+        }
+
+        .status-badge.running {
+            background: rgba(96, 165, 250, 0.15);
+            color: var(--accent-blue);
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-badge.running::before {
+            background: var(--accent-blue);
+            animation: blink 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            position: relative;
+        }
+
+        .header-info {
+            font-size: 13px;
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            background: var(--glass-bg);
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+        }
+
+        /* Main Content */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .new-chat-btn {
+            width: 100%;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(96, 165, 250, 0.3);
+        }
+
+        .new-chat-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(96, 165, 250, 0.4);
+        }
+
+        .chat-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .chat-item {
+            padding: 12px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-bottom: 6px;
+            transition: all 0.2s;
+            background: transparent;
+            border: 1px solid transparent;
+        }
+
+        .chat-item:hover {
+            background: var(--glass-hover);
+        }
+
+        .chat-item.active {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .chat-item-title {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-item-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .settings-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--glass-bg);
+            color: var(--text-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .settings-btn:hover {
+            background: var(--glass-hover);
+            color: var(--text-primary);
+        }
+
+        /* Chat Area */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            gap: 12px;
+            padding: 12px 24px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            flex-shrink: 0;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            font-size: 12px;
+        }
+
+        .stat-icon {
+            font-size: 14px;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+        }
+
+        .stat-value {
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        /* Chat Messages */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px 32px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .empty-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            font-size: 40px;
+            box-shadow: 0 8px 30px rgba(96, 165, 250, 0.3);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .empty-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .empty-desc {
+            font-size: 14px;
+            max-width: 400px;
+            line-height: 1.6;
+        }
+
+        /* Thinking Panel */
+        .thinking-panel {
+            background: rgba(167, 139, 250, 0.08);
+            border: 1px solid rgba(167, 139, 250, 0.2);
+            border-radius: 16px;
+            margin: 0 auto 20px;
+            max-width: 850px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .thinking-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(167, 139, 250, 0.15);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent-purple);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .thinking-content {
+            padding: 16px;
+            font-size: 13px;
+            line-height: 1.7;
+            max-height: 180px;
+            overflow-y: auto;
+            color: var(--text-secondary);
+        }
+
+        /* Tools Panel */
+        .tools-panel {
+            background: rgba(34, 211, 238, 0.05);
+            border: 1px solid rgba(34, 211, 238, 0.15);
+            border-radius: 16px;
+            margin: 0 auto 20px;
+            max-width: 850px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .tools-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(34, 211, 238, 0.1);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tools-content {
+            padding: 12px;
+            max-height: 160px;
+            overflow-y: auto;
+        }
+
+        .tool-call {
+            padding: 12px 14px;
+            background: rgba(34, 211, 238, 0.05);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            border: 1px solid rgba(34, 211, 238, 0.1);
+        }
+
+        .tool-call:last-child {
+            margin-bottom: 0;
+        }
+
+        .tool-name {
+            color: var(--accent-green);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tool-args {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-top: 6px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        .tool-result {
+            color: var(--text-muted);
+            font-size: 11px;
+            margin-top: 6px;
+            padding: 6px 8px;
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 4px;
+            max-height: 60px;
+            overflow: hidden;
+        }
+
+        /* Messages */
+        .message {
+            max-width: 850px;
+            margin: 0 auto 20px;
+            display: flex;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-user {
+            justify-content: flex-end;
+        }
+
+        .message-user .message-bubble {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: white;
+            border-radius: 20px 20px 6px 20px;
+            padding: 14px 18px;
+            max-width: 70%;
+            box-shadow: 0 4px 15px rgba(96, 165, 250, 0.3);
+        }
+
+        .message-assistant {
+            justify-content: flex-start;
+        }
+
+        .message-assistant .avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 14px;
+            flex-shrink: 0;
+            font-size: 16px;
+            box-shadow: 0 4px 15px rgba(167, 139, 250, 0.3);
+        }
+
+        .message-assistant .message-bubble {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px 20px 20px 20px;
+            padding: 14px 18px;
+            flex: 1;
+            backdrop-filter: blur(10px);
+        }
+
+        .message-bubble pre {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 14px;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-family: 'SF Mono', Monaco, 'Fira Code', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            margin: 10px 0;
+            border: 1px solid var(--glass-border);
+        }
+
+        .message-bubble code {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 3px 7px;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 12px;
+        }
+
+        /* Expert Selection */
+        .expert-area {
+            padding: 12px 24px;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.15), transparent);
+            border-bottom: 1px solid var(--glass-border);
+            flex-shrink: 0;
+        }
+
+        .expert-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .expert-list {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        .expert-chip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .expert-chip:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .expert-chip.active {
+            background: linear-gradient(135deg, rgba(156, 39, 176, 0.4), rgba(103, 58, 183, 0.4));
+            border-color: rgba(156, 39, 176, 0.6);
+            color: #e1bee7;
+            box-shadow: 0 4px 15px rgba(156, 39, 176, 0.3);
+        }
+
+        .expert-icon {
+            font-size: 14px;
+        }
+
+        .expert-name {
+            font-weight: 500;
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 16px 24px 24px;
+            background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.2));
+            flex-shrink: 0;
+        }
+
+        .input-container {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 12px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 6px;
+            transition: all 0.3s;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
+        }
+
+        .prompt-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 15px;
+            padding: 12px 16px;
+            resize: none;
+            outline: none;
+            min-height: 48px;
+            max-height: 150px;
+            font-family: inherit;
+            line-height: 1.5;
+        }
+
+        .prompt-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .send-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(96, 165, 250, 0.3);
+        }
+
+        .send-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(96, 165, 250, 0.4);
+        }
+
+        .send-btn:disabled {
+            background: var(--glass-hover);
+            color: var(--text-muted);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .stop-btn {
+            background: linear-gradient(135deg, var(--accent-red), var(--accent-orange));
+            box-shadow: 0 4px 15px rgba(248, 113, 113, 0.3);
+        }
+
+        .stop-btn:hover:not(:disabled) {
+            box-shadow: 0 6px 20px rgba(248, 113, 113, 0.4);
+        }
+
+        /* Workspace Selector */
+        .workspace-selector {
+            position: relative;
+        }
+
+        .workspace-btn {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .workspace-btn:hover {
+            background: var(--glass-hover);
+        }
+
+        .workspace-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 8px;
+            min-width: 320px;
+            max-height: 400px;
+            overflow-y: auto;
+            background: linear-gradient(180deg, rgba(48, 43, 99, 0.98), rgba(36, 36, 62, 0.98));
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            padding: 8px 0;
+        }
+
+        .workspace-dropdown::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .workspace-dropdown::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .workspace-dropdown::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        .workspace-dropdown-header {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--glass-border);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .workspace-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .workspace-item:hover {
+            background: var(--glass-hover);
+        }
+
+        .workspace-item.active {
+            background: rgba(96, 165, 250, 0.15);
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        .workspace-item-info {
+            flex: 1;
+        }
+
+        .workspace-item-name {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .workspace-item-path {
+            font-size: 11px;
+            color: var(--text-muted);
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .workspace-item-actions {
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .workspace-item:hover .workspace-item-actions {
+            opacity: 1;
+        }
+
+        .workspace-action-btn {
+            padding: 4px 8px;
+            background: transparent;
+            border: none;
+            border-radius: 4px;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .workspace-action-btn:hover {
+            background: var(--glass-hover);
+            color: var(--text-primary);
+        }
+
+        .workspace-action-btn.delete:hover {
+            color: var(--accent-red);
+        }
+
+        .workspace-add-btn {
+            width: 100%;
+            padding: 12px 14px;
+            background: transparent;
+            border: none;
+            border-top: 1px solid var(--glass-border);
+            color: var(--accent-blue);
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .workspace-add-btn:hover {
+            background: var(--glass-hover);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .modal {
+            background: linear-gradient(180deg, rgba(48, 43, 99, 0.95), rgba(36, 36, 62, 0.95));
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            width: 480px;
+            max-width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--glass-border);
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
+        }
+
+        .form-select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 40px;
+        }
+
+        .form-select option {
+            background: #24243e;
+            color: white;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn-secondary {
+            padding: 10px 20px;
+            background: var(--glass-bg);
+            color: var(--text-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: var(--glass-hover);
+            color: var(--text-primary);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .quick-action {
+            padding: 6px 12px;
+            background: rgba(96, 165, 250, 0.1);
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--accent-blue);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-action:hover {
+            background: rgba(96, 165, 250, 0.2);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="app-container">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <div class="logo">
+                        <div class="logo-icon">⚡</div>
+                        Agent Harness
+                    </div>
+                    <span :class="['status-badge', isRunning ? 'running' : 'idle']">
+                        {{ isRunning ? '🔄 运行中' : '✅ 就绪' }}
+                    </span>
+                </div>
+                <div class="header-right">
+                    <!-- Workspace Selector -->
+                    <div class="workspace-selector">
+                        <button class="workspace-btn" @click="showWorkspaceDropdown = !showWorkspaceDropdown">
+                            <span>📁</span>
+                            <span>{{ currentWorkspace ? currentWorkspace.name : '选择工作空间' }}</span>
+                            <span style="color: var(--text-muted);">▼</span>
+                        </button>
+                        <div class="workspace-dropdown" v-if="showWorkspaceDropdown" @click.stop>
+                            <div class="workspace-dropdown-header">📂 工作空间</div>
+                            <div
+                                v-for="ws in workspaces"
+                                :key="ws.id"
+                                :class="['workspace-item', { active: ws.id === currentWorkspaceId }]"
+                                @click="selectWorkspace(ws)"
+                            >
+                                <div class="workspace-item-info">
+                                    <div class="workspace-item-name">{{ ws.name }}</div>
+                                    <div class="workspace-item-path">{{ ws.path }}</div>
+                                </div>
+                                <div class="workspace-item-actions" v-if="ws.id !== 'default'">
+                                    <button class="workspace-action-btn delete" @click.stop="deleteWorkspace(ws.id)">🗑️</button>
+                                </div>
+                            </div>
+                            <button class="workspace-add-btn" @click="showWorkspaceModal = true; showWorkspaceDropdown = false">
+                                <span>➕</span> 添加工作空间
+                            </button>
+                        </div>
+                    </div>
+                    <div class="header-info">
+                        📋 {{ currentSession ? currentSession.slice(0, 8) + '...' : 'None' }}
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Container -->
+            <div class="main-container">
+                <!-- Sidebar -->
+                <aside class="sidebar">
+                    <div class="sidebar-header">
+                        <button class="new-chat-btn" @click="createSession">
+                            <span>✨</span> 新建会话
+                        </button>
+                    </div>
+
+                    <div class="chat-list">
+                        <div
+                            v-for="session in sessions"
+                            :key="session.id"
+                            :class="['chat-item', { active: session.id === currentSession }]"
+                            @click="loadSession(session.id)"
+                        >
+                            <div class="chat-item-title">{{ session.title || '新会话' }}</div>
+                            <div class="chat-item-meta">{{ formatTime(session.last_activity) }}</div>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-footer">
+                        <button class="settings-btn" @click="showSettings = true">
+                            <span>⚙️</span> 设置
+                        </button>
+                    </div>
+                </aside>
+
+                <!-- Chat Area -->
+                <main class="chat-area">
+                    <!-- Stats Bar -->
+                    <div class="stats-bar" v-if="currentSession">
+                        <div class="stat-item">
+                            <span class="stat-icon">🔧</span>
+                            <span class="stat-label">Provider:</span>
+                            <span class="stat-value">{{ getProviderName(config.provider_type) }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">📊</span>
+                            <span class="stat-label">Tokens:</span>
+                            <span class="stat-value">{{ promptTokens }} / {{ completionTokens }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">💰</span>
+                            <span class="stat-label">Cost:</span>
+                            <span class="stat-value">${{ totalCost.toFixed(4) }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">🔄</span>
+                            <span class="stat-label">Turns:</span>
+                            <span class="stat-value">{{ turnCount }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Expert Selection -->
+                    <div class="expert-area" v-if="experts.length > 0">
+                        <div class="expert-label">👔 专家模式</div>
+                        <div class="expert-list">
+                            <div
+                                v-for="expert in experts"
+                                :key="expert.id"
+                                class="expert-chip"
+                                :class="{ active: selectedExpert && selectedExpert.id === expert.id }"
+                                @click="selectExpert(expert)"
+                            >
+                                <span class="expert-icon">{{ expert.icon }}</span>
+                                <span class="expert-name">{{ expert.name }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Messages -->
+                    <div class="chat-messages">
+                        <!-- Empty State -->
+                        <div class="empty-state" v-if="!currentSession || messages.length === 0">
+                            <div class="empty-icon">🤖</div>
+                            <div class="empty-title">开始你的 AI 之旅</div>
+                            <div class="empty-desc">
+                                在下方输入你的问题，AI Agent 将帮助你分析代码、解决问题、执行任务。
+                            </div>
+                            <div class="quick-actions">
+                                <span class="quick-action" @click="quickPrompt('帮我分析这个项目的结构')">📁 分析项目</span>
+                                <span class="quick-action" @click="quickPrompt('解释这段代码的作用')">💻 解释代码</span>
+                                <span class="quick-action" @click="quickPrompt('帮我写一个单元测试')">🧪 编写测试</span>
+                            </div>
+                        </div>
+
+                        <!-- Thinking Panel -->
+                        <div class="thinking-panel" v-if="thinkingContent">
+                            <div class="thinking-header">
+                                <span>💭</span> 思考过程
+                            </div>
+                            <div class="thinking-content" v-html="thinkingContent"></div>
+                        </div>
+
+                        <!-- Tools Panel -->
+                        <div class="tools-panel" v-if="toolCalls.length > 0">
+                            <div class="tools-header">📦 工具调用 ({{ toolCalls.length }})</div>
+                            <div class="tools-content">
+                                <div v-for="(call, index) in toolCalls" :key="index" class="tool-call">
+                                    <div class="tool-name">🔧 {{ call.tool }}</div>
+                                    <div class="tool-args" v-if="call.args">{{ call.args }}</div>
+                                    <div class="tool-result" v-if="call.result">→ {{ call.result }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Messages -->
+                        <div
+                            v-for="(msg, index) in messages"
+                            :key="index"
+                            :class="['message', msg.role === 'user' ? 'message-user' : 'message-assistant']"
+                        >
+                            <div class="avatar" v-if="msg.role === 'assistant'">🤖</div>
+                            <div class="message-bubble">
+                                <div v-if="msg.role === 'user'">{{ msg.content }}</div>
+                                <pre v-else-if="msg.content">{{ msg.content }}</pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input Area -->
+                    <div class="input-area">
+                        <div class="input-container">
+                            <div class="input-wrapper">
+                                <textarea
+                                    class="prompt-input"
+                                    v-model="prompt"
+                                    placeholder="输入你的问题或指令... (Enter 发送，Shift+Enter 换行)"
+                                    rows="1"
+                                    @keydown.enter.exact.prevent="sendMessage"
+                                    :disabled="isRunning"
+                                ></textarea>
+                                <button
+                                    v-if="!isRunning"
+                                    class="send-btn"
+                                    @click="sendMessage"
+                                    :disabled="!prompt.trim()"
+                                >
+                                    <span>🚀</span> 发送
+                                </button>
+                                <button
+                                    v-else
+                                    class="send-btn stop-btn"
+                                    @click="stopAgent"
+                                >
+                                    <span>⏹️</span> 停止
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div class="modal-overlay" v-if="showSettings" @click.self="showSettings = false">
+            <div class="modal">
+                <div class="modal-header">⚙️ 设置</div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">LLM Provider</label>
+                        <select class="form-select" v-model="config.provider_type">
+                            <option value="volcengine_plan">🚀 火山引擎 Coding Plan (推荐)</option>
+                            <option value="doubao">🎯 豆包 (ByteDance)</option>
+                            <option value="claude">🧠 Claude (Anthropic)</option>
+                            <option value="openai">🌐 OpenAI</option>
+                            <option value="qwen">💎 通义千问 (Alibaba)</option>
+                            <option value="deepseek">🔥 DeepSeek</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">API Key</label>
+                        <input
+                            type="password"
+                            class="form-input"
+                            v-model="config.api_key"
+                            placeholder="输入你的 API Key..."
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Model 模型</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            v-model="config.model"
+                            placeholder="如: ark-code-latest"
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Max Turns 最大轮次</label>
+                        <input
+                            type="number"
+                            class="form-input"
+                            v-model="config.max_turns"
+                            min="1"
+                            max="200"
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Temperature 温度</label>
+                        <input
+                            type="number"
+                            class="form-input"
+                            v-model="config.temperature"
+                            min="0"
+                            max="2"
+                            step="0.1"
+                        >
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" @click="showSettings = false">取消</button>
+                    <button class="send-btn" @click="saveSettings">💾 保存</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Workspace Modal -->
+        <div class="modal-overlay" v-if="showWorkspaceModal" @click.self="showWorkspaceModal = false">
+            <div class="modal">
+                <div class="modal-header">📁 添加工作空间</div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">名称</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            v-model="newWorkspace.name"
+                            placeholder="例如: Python 项目"
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">路径</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            v-model="newWorkspace.path"
+                            placeholder="例如: D:\projects\my-python-project"
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">描述 (可选)</label>
+                        <input
+                            type="text"
+                            class="form-input"
+                            v-model="newWorkspace.description"
+                            placeholder="简要描述这个工作空间..."
+                        >
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" @click="showWorkspaceModal = false">取消</button>
+                    <button class="send-btn" @click="addWorkspace">➕ 添加</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
+
+        createApp({
+            setup() {
+                // State
+                const sessions = ref([]);
+                const currentSession = ref(null);
+                const messages = ref([]);
+                const prompt = ref('');
+                const isRunning = ref(false);
+                const thinkingContent = ref('');
+                const toolCalls = ref([]);
+                const showSettings = ref(false);
+
+                // Workspace State
+                const workspaces = ref([]);
+                const currentWorkspaceId = ref('default');
+                const currentWorkspace = ref(null);
+                const showWorkspaceDropdown = ref(false);
+                const showWorkspaceModal = ref(false);
+                const newWorkspace = ref({ name: '', path: '', description: '' });
+
+                // Expert State
+                const experts = ref([]);
+                const selectedExpert = ref(null);
+
+                // Stats
+                const promptTokens = ref(0);
+                const completionTokens = ref(0);
+                const totalCost = ref(0);
+                const turnCount = ref(0);
+
+                // Config
+                const config = ref({
+                    provider_type: 'volcengine_plan',
+                    api_key: '',
+                    base_url: '',
+                    model: 'ark-code-latest',
+                    max_turns: 50,
+                    temperature: 0.7,
+                    model_kwargs: {}
+                });
+
+                // Provider names
+                const providerNames = {
+                    volcengine_plan: '火山引擎',
+                    doubao: '豆包',
+                    claude: 'Claude',
+                    openai: 'OpenAI',
+                    qwen: '通义千问',
+                    deepseek: 'DeepSeek'
+                };
+
+                const getProviderName = (type) => providerNames[type] || type;
+
+                // WebSocket
+                let ws = null;
+
+                // Methods
+                const formatTime = (isoString) => {
+                    if (!isoString) return '';
+                    const date = new Date(isoString);
+                    return date.toLocaleString('zh-CN', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                };
+
+                const quickPrompt = (text) => {
+                    prompt.value = text;
+                    sendMessage();
+                };
+
+                // Workspace Methods
+                const loadWorkspaces = async () => {
+                    try {
+                        const res = await axios.get('/api/workspaces');
+                        workspaces.value = res.data;
+                        // Set default workspace if none selected
+                        if (!currentWorkspace.value && workspaces.value.length > 0) {
+                            currentWorkspaceId.value = 'default';
+                            currentWorkspace.value = workspaces.value.find(w => w.id === 'default') || workspaces.value[0];
+                        }
+                    } catch (err) {
+                        console.error('加载工作空间失败:', err);
+                    }
+                };
+
+                const selectWorkspace = async (ws) => {
+                    currentWorkspaceId.value = ws.id;
+                    currentWorkspace.value = ws;
+                    showWorkspaceDropdown.value = false;
+                    // Create new session for this workspace
+                    await createSession();
+                };
+
+                const addWorkspace = async () => {
+                    if (!newWorkspace.value.name || !newWorkspace.value.path) {
+                        alert('请填写名称和路径');
+                        return;
+                    }
+                    try {
+                        const res = await axios.post('/api/workspaces', newWorkspace.value);
+                        workspaces.value.push(res.data);
+                        showWorkspaceModal.value = false;
+                        newWorkspace.value = { name: '', path: '', description: '' };
+                        // Select the newly created workspace
+                        await selectWorkspace(res.data);
+                    } catch (err) {
+                        console.error('创建工作空间失败:', err);
+                        alert('创建失败: ' + (err.response?.data?.detail || err.message));
+                    }
+                };
+
+                const deleteWorkspace = async (workspaceId) => {
+                    if (!confirm('确定要删除这个工作空间吗？')) return;
+                    try {
+                        await axios.delete(`/api/workspaces/${workspaceId}`);
+                        workspaces.value = workspaces.value.filter(w => w.id !== workspaceId);
+                        // If deleted current workspace, switch to default
+                        if (currentWorkspaceId.value === workspaceId) {
+                            const defaultWs = workspaces.value.find(w => w.id === 'default');
+                            if (defaultWs) {
+                                await selectWorkspace(defaultWs);
+                            }
+                        }
+                    } catch (err) {
+                        console.error('删除工作空间失败:', err);
+                        alert('删除失败: ' + (err.response?.data?.detail || err.message));
+                    }
+                };
+
+                const createSession = async () => {
+                    try {
+                        const res = await axios.post('/api/sessions', {
+                            config: config.value,
+                            workspace_id: currentWorkspaceId.value,
+                            workspace_path: currentWorkspace.value?.path || ''
+                        });
+                        currentSession.value = res.data.session_id;
+                        messages.value = [];
+                        thinkingContent.value = '';
+                        toolCalls.value = [];
+                        promptTokens.value = 0;
+                        completionTokens.value = 0;
+                        totalCost.value = 0;
+                        await loadSessions();
+                        connectWebSocket();
+                    } catch (err) {
+                        console.error('创建会话失败:', err);
+                    }
+                };
+
+                // Expert Methods
+                const loadExperts = async () => {
+                    try {
+                        const res = await axios.get('/api/experts');
+                        experts.value = res.data;
+                    } catch (e) {
+                        console.error('加载专家列表失败:', e);
+                    }
+                };
+
+                const selectExpert = async (expert) => {
+                    if (selectedExpert.value && selectedExpert.value.id === expert.id) {
+                        selectedExpert.value = null;
+                    } else {
+                        selectedExpert.value = expert;
+                    }
+                };
+
+                const getExpertSystemPrompt = async (expertId) => {
+                    try {
+                        const res = await axios.get(`/api/experts/${expertId}/system-prompt`);
+                        return res.data.system_prompt;
+                    } catch (e) {
+                        console.error('获取专家提示词失败:', e);
+                        return '';
+                    }
+                };
+
+                const loadSessions = async () => {
+                    try {
+                        const res = await axios.get('/api/sessions');
+                        sessions.value = res.data;
+                    } catch (err) {
+                        console.error('加载会话列表失败:', err);
+                    }
+                };
+
+                const loadSession = async (sessionId) => {
+                    try {
+                        const res = await axios.get(`/api/sessions/${sessionId}`);
+                        currentSession.value = sessionId;
+                        messages.value = res.data.conversation || [];
+                        thinkingContent.value = '';
+                        toolCalls.value = [];
+                        connectWebSocket();
+                    } catch (err) {
+                        console.error('加载会话失败:', err);
+                    }
+                };
+
+                const sendMessage = async () => {
+                    if (!prompt.value.trim() || isRunning.value) return;
+
+                    const userMessage = prompt.value.trim();
+                    prompt.value = '';
+
+                    messages.value.push({
+                        role: 'user',
+                        content: userMessage
+                    });
+
+                    isRunning.value = true;
+                    thinkingContent.value = '';
+                    toolCalls.value = [];
+
+                    // Use current workspace path
+                    const workspacePath = currentWorkspace.value?.path || '/tmp';
+
+                    // Get expert system prompt if selected
+                    let systemPrompt = null;
+                    if (selectedExpert.value) {
+                        systemPrompt = await getExpertSystemPrompt(selectedExpert.value.id);
+                    }
+
+                    const runPayload = {
+                        action: 'run',
+                        prompt: userMessage,
+                        workspace: workspacePath,
+                        expert_id: selectedExpert.value?.id || null,
+                        system_prompt: systemPrompt
+                    };
+
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify(runPayload));
+                    } else {
+                        // Fallback to REST API
+                        try {
+                            const res = await axios.post(`/api/sessions/${currentSession.value}/run`, {
+                                prompt: userMessage,
+                                workspace: workspacePath,
+                                expert_id: selectedExpert.value?.id || null,
+                                system_prompt: systemPrompt
+                            });
+                            const result = res.data.result;
+                            const content = result.content || result;
+                            messages.value.push({
+                                role: 'assistant',
+                                content: content
+                            });
+                        } catch (err) {
+                            console.error('运行失败:', err);
+                            messages.value.push({
+                                role: 'assistant',
+                                content: `❌ 错误: ${err.response?.data?.detail || err.message}`
+                            });
+                        }
+                        isRunning.value = false;
+                    }
+                };
+
+                const stopAgent = () => {
+                    if (ws) {
+                        ws.send(JSON.stringify({ action: 'stop' }));
+                    }
+                    isRunning.value = false;
+                };
+
+                const saveSettings = () => {
+                    showSettings.value = false;
+                    if (currentSession.value) {
+                        createSession(); // Recreate session with new config
+                    }
+                };
+
+                const connectWebSocket = () => {
+                    if (ws) {
+                        ws.close();
+                    }
+
+                    if (!currentSession.value) return;
+
+                    ws = new WebSocket(`ws://${location.host}/ws/${currentSession.value}`);
+
+                    ws.onopen = () => {
+                        console.log('WebSocket connected');
+                    };
+
+                    ws.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+
+                        switch (data.type) {
+                            case 'status':
+                                isRunning.value = data.status === 'running';
+                                break;
+                            case 'thinking':
+                                thinkingContent.value += data.content + '\n\n';
+                                break;
+                            case 'tool_call':
+                                toolCalls.value.push({
+                                    tool: data.tool,
+                                    args: data.arguments
+                                });
+                                break;
+                            case 'tool_result':
+                                if (toolCalls.value.length > 0) {
+                                    toolCalls.value[toolCalls.value.length - 1].result = data.result;
+                                }
+                                break;
+                            case 'token_update':
+                                promptTokens.value = data.prompt_tokens || 0;
+                                completionTokens.value = data.completion_tokens || 0;
+                                totalCost.value = data.cost || 0;
+                                break;
+                            case 'finished':
+                                messages.value.push({
+                                    role: 'assistant',
+                                    content: data.result
+                                });
+                                isRunning.value = false;
+                                turnCount.value++;
+                                thinkingContent.value = '';
+                                toolCalls.value = [];
+                                break;
+                            case 'error':
+                                console.error('Error:', data.message);
+                                messages.value.push({
+                                    role: 'assistant',
+                                    content: `❌ 错误: ${data.message}`
+                                });
+                                isRunning.value = false;
+                                break;
+                        }
+                    };
+
+                    ws.onclose = () => {
+                        console.log('WebSocket disconnected');
+                    };
+
+                    ws.onerror = (err) => {
+                        console.error('WebSocket error:', err);
+                        isRunning.value = false;
+                    };
+                };
+
+                // Lifecycle
+                onMounted(async () => {
+                    // Load workspaces first
+                    await loadWorkspaces();
+                    await loadExperts();
+                    await loadSessions();
+                    // 如果有会话，加载最新的一个；没有才创建新会话
+                    if (sessions.value.length > 0) {
+                        const latestSession = sessions.value[sessions.value.length - 1];
+                        await loadSession(latestSession.id);
+                    } else {
+                        await createSession();
+                    }
+                });
+
+                onUnmounted(() => {
+                    if (ws) {
+                        ws.close();
+                    }
+                });
+
+                return {
+                    sessions,
+                    currentSession,
+                    messages,
+                    prompt,
+                    isRunning,
+                    thinkingContent,
+                    toolCalls,
+                    showSettings,
+                    promptTokens,
+                    completionTokens,
+                    totalCost,
+                    turnCount,
+                    config,
+                    // Workspace
+                    workspaces,
+                    currentWorkspaceId,
+                    currentWorkspace,
+                    showWorkspaceDropdown,
+                    showWorkspaceModal,
+                    newWorkspace,
+                    loadWorkspaces,
+                    selectWorkspace,
+                    addWorkspace,
+                    deleteWorkspace,
+                    // Expert
+                    experts,
+                    selectedExpert,
+                    selectExpert,
+                    // Methods
+                    createSession,
+                    loadSession,
+                    sendMessage,
+                    stopAgent,
+                    saveSettings,
+                    formatTime,
+                    quickPrompt,
+                    getProviderName
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

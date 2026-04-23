@@ -1,0 +1,32 @@
+# ============================================================
+# OpenClaw Agent Harness - Conda 环境配置
+# ============================================================
+# 使用方法:
+#   conda env create -f environment.yml
+#   conda activate agent-harness
+#   pip install -r requirements.txt
+# ============================================================
+
+name: agent-harness
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  # Python 版本 (推荐 3.11，兼容性最好)
+  - python=3.11
+
+  # 基础包 (conda 自带)
+  - pip
+
+  # pip 依赖 (需要单独安装)
+  - pip>=23.0
+
+variables:
+  # 环境变量示例 (可选)
+  # ANTHROPIC_API_KEY: "your-key-here"
+  # OPENAI_API_KEY: "your-key-here"
+
+---
+# 完整 pip 安装命令 (在激活环境后执行)
+# pip install -r requirements.txt

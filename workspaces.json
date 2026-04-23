@@ -1,0 +1,16 @@
+[
+  {
+    "id": "default",
+    "name": "默认工作空间",
+    "path": "D:\\ai_coder\\p000_ai_study_py\\10_agent_harness",
+    "description": "项目根目录",
+    "created_at": "2026-04-22T20:32:10.760362"
+  },
+  {
+    "id": "7b69dcb2-abef-46e4-818c-456f5230c22b",
+    "name": "测试agent",
+    "path": "D:\\ai_coder\\p010_agent_test",
+    "description": "",
+    "created_at": "2026-04-22T20:32:10.760362"
+  }
+]
